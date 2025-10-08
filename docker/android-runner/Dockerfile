@@ -46,7 +46,10 @@ RUN mkdir -p ${ANDROID_SDK_ROOT}/licenses \
   && echo "8933bad161af4178b5d56f8a50cf6e57" > ${ANDROID_SDK_ROOT}/licenses/android-sdk-license
 
 # Install SDK packages
-RUN yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --install "platform-tools" "platforms;android-33" "build-tools;33.0.2" "platforms;android-31" "emulator"
+RUN yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --install "platform-tools" "platforms;android-33" "build-tools;33.0.2" "platforms;android-31" "emulator" "ndk;26.1.10909125"
+
+# Change ownership to the non-root user
+RUN chown -R expo-rn-runner:expo-rn-runner ${ANDROID_SDK_ROOT}
 
 # Remove caches
 RUN rm -rf /var/cache/apt/*

@@ -49,7 +49,7 @@ RUN rm -rf /var/cache/apt/*
 RUN apt-get update && apt-get install -y bash
 
 # Create non-root user
-ARG USERNAME=expo-rn-builder
+ARG USERNAME=expo-rn-runner
 RUN useradd -m -s /bin/bash $USERNAME
 USER $USERNAME
 WORKDIR /home/$USERNAME

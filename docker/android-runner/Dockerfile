@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   apt-transport-https gnupg2 lsb-release xz-utils zip jq sudo build-essential libc6 \
   && rm -rf /var/lib/apt/lists/*
 
-# Install Node.js LTS
+# Install Node.js LTS and yarn
 RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION} | bash - \
   && apt-get update && apt-get install -y nodejs \
   && npm install -g yarn@latest
@@ -44,6 +44,9 @@ RUN yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --install "platform-tools" "
 
 # Remove caches
 RUN rm -rf /var/cache/apt/*
+
+# Prepare cache directory with write permission
+RUN mkdir -p /opt/hostedtoolcache/node && chmod -R 777 /opt/hostedtoolcache
 
 # Install basic utilities
 RUN apt-get update && apt-get install -y bash

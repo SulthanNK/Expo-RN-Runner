@@ -1,3 +1,5 @@
+# Current Version 0.0.2
+
 # Use Ubuntu 22.04 LTS base
 FROM ubuntu:22.04
 

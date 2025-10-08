@@ -17,6 +17,12 @@ RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION} | bash - \
   && apt-get update && apt-get install -y nodejs \
   && npm install -g yarn@latest
 
+# Install eas-cli globally
+RUN npm install -g eas-cli@latest
+
+# Install jq using sudo apt-get
+RUN sudo apt-get update && sudo apt-get install -y jq
+
 # Create SDK directories
 RUN mkdir -p ${ANDROID_SDK_ROOT}/cmdline-tools && \
   mkdir -p ${ANDROID_SDK_ROOT}/licenses

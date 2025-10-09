@@ -9,9 +9,10 @@ ARG ANDROID_CMDLINE_TOOLS_ZIP=commandlinetools-linux-8512546_latest.zip
 ARG NODE_VERSION=22.x
 ARG JAVA_VERSION=17
 
+# Install required packages, clean up apt cache in one layer
 RUN apt-get update && apt-get install -y --no-install-recommends \
   ca-certificates curl wget unzip git openjdk-${JAVA_VERSION}-jdk procps \
-  apt-transport-https gnupg2 lsb-release xz-utils zip jq sudo build-essential libc6 \
+  apt-transport-https gnupg2 lsb-release xz-utils zip sudo build-essential libc6 \
   && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js LTS and yarn
@@ -26,8 +27,7 @@ RUN npm install -g eas-cli@latest
 RUN sudo apt-get update && sudo apt-get install -y jq
 
 # Create SDK directories
-RUN mkdir -p ${ANDROID_SDK_ROOT}/cmdline-tools && \
-  mkdir -p ${ANDROID_SDK_ROOT}/licenses
+RUN mkdir -p ${ANDROID_SDK_ROOT}/cmdline-tools ${ANDROID_SDK_ROOT}/licenses
 
 WORKDIR /tmp
 
@@ -48,7 +48,11 @@ RUN mkdir -p ${ANDROID_SDK_ROOT}/licenses \
   && echo "8933bad161af4178b5d56f8a50cf6e57" > ${ANDROID_SDK_ROOT}/licenses/android-sdk-license
 
 # Install SDK packages
-RUN yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --install "platform-tools" "platforms;android-33" "build-tools;33.0.2" "platforms;android-31" "emulator" "ndk;26.1.10909125"
+RUN yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --install "platform-tools" "platforms;android-35" "platforms;android-34" "platforms;android-24" "build-tools;35.0.0" "build-tools;34.0.0" "build-tools;24.0.0" "ndk;26.1.10909125" "emulator"
+
+# Create non-root user
+ARG USERNAME=expo-rn-runner
+RUN useradd -m -s /bin/bash $USERNAME
 
 # Change ownership to the non-root user
 RUN chown -R expo-rn-runner:expo-rn-runner ${ANDROID_SDK_ROOT}
@@ -63,15 +67,10 @@ RUN mkdir -p /opt/hostedtoolcache/node && chmod -R 777 /opt/hostedtoolcache
 RUN apt-get update && apt-get install -y bash
 
 # Create non-root user
-ARG USERNAME=expo-rn-runner
-RUN useradd -m -s /bin/bash $USERNAME
 USER $USERNAME
 WORKDIR /home/$USERNAME
 
 # Update PATH and env for user
-ENV ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT}
-ENV ANDROID_HOME=${ANDROID_SDK_ROOT}
 ENV PATH=${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin:${ANDROID_SDK_ROOT}/platform-tools:${ANDROID_SDK_ROOT}/emulator:/home/${USERNAME}/.yarn/bin:${PATH}
-ENV JAVA_HOME=/usr/lib/jvm/java-${JAVA_VERSION}-openjdk-amd64
 
 ENTRYPOINT ["tail", "-f", "/dev/null"]

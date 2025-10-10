@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-IMAGE_NAME=sulthannk/expo-rn-runner:0.0.2
+IMAGE_NAME=sulthannk/expo-rn-runner:0.0.1
 DOCKERFILE_DIR="$(dirname "$0")"
 
 echo "Building ${IMAGE_NAME}..."

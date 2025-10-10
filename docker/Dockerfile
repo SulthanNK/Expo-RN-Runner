@@ -1,76 +1,54 @@
 # Current Version 0.0.2
 
-# Use Ubuntu 22.04 LTS base
 FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
-ARG ANDROID_SDK_ROOT=/opt/android-sdk
-ARG ANDROID_CMDLINE_TOOLS_ZIP=commandlinetools-linux-8512546_latest.zip
-ARG NODE_VERSION=22.x
-ARG JAVA_VERSION=17
 
-# Install required packages, clean up apt cache in one layer
+# Install dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-  ca-certificates curl wget unzip git openjdk-${JAVA_VERSION}-jdk procps \
-  apt-transport-https gnupg2 lsb-release xz-utils zip sudo build-essential libc6 \
+  ca-certificates curl wget unzip git openjdk-17-jdk procps \
+  apt-transport-https gnupg2 lsb-release xz-utils zip build-essential libc6 jq bash \
   && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js LTS and yarn
-RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION} | bash - \
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
   && apt-get update && apt-get install -y nodejs \
-  && npm install -g yarn@latest
+  && npm install -g yarn@latest eas-cli@latest
 
-# Install eas-cli globally
-RUN npm install -g eas-cli@latest
+# Set up Android SDK
+ARG ANDROID_SDK_ROOT=/opt/android-sdk
+ARG ANDROID_CMDLINE_TOOLS_ZIP=commandlinetools-linux-8512546_latest.zip
 
-# Install jq using sudo apt-get
-RUN sudo apt-get update && sudo apt-get install -y jq
-
-# Create SDK directories
-RUN mkdir -p ${ANDROID_SDK_ROOT}/cmdline-tools ${ANDROID_SDK_ROOT}/licenses
-
-WORKDIR /tmp
-
-# Download Android command line tools
-RUN curl -fSL https://dl.google.com/android/repository/${ANDROID_CMDLINE_TOOLS_ZIP} -o /tmp/${ANDROID_CMDLINE_TOOLS_ZIP} \
-  && unzip /tmp/${ANDROID_CMDLINE_TOOLS_ZIP} -d /tmp/cmdline-tools-temp \
-  && mkdir -p ${ANDROID_SDK_ROOT}/cmdline-tools/latest \
-  && mv /tmp/cmdline-tools-temp/cmdline-tools/* ${ANDROID_SDK_ROOT}/cmdline-tools/latest/ \
-  && rm -rf /tmp/${ANDROID_CMDLINE_TOOLS_ZIP} /tmp/cmdline-tools-temp
+RUN mkdir -p ${ANDROID_SDK_ROOT}/cmdline-tools ${ANDROID_SDK_ROOT}/licenses && \
+  curl -fSL https://dl.google.com/android/repository/${ANDROID_CMDLINE_TOOLS_ZIP} -o /tmp/${ANDROID_CMDLINE_TOOLS_ZIP} && \
+  unzip /tmp/${ANDROID_CMDLINE_TOOLS_ZIP} -d /tmp/cmdline-tools-temp && \
+  mkdir -p ${ANDROID_SDK_ROOT}/cmdline-tools/latest && \
+  mv /tmp/cmdline-tools-temp/cmdline-tools/* ${ANDROID_SDK_ROOT}/cmdline-tools/latest/ && \
+  rm -rf /tmp/${ANDROID_CMDLINE_TOOLS_ZIP} /tmp/cmdline-tools-temp
 
 ENV ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT}
 ENV ANDROID_HOME=${ANDROID_SDK_ROOT}
-ENV PATH=${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin:${ANDROID_SDK_ROOT}/platform-tools:${ANDROID_SDK_ROOT}/emulator:${PATH}
-ENV JAVA_HOME=/usr/lib/jvm/java-${JAVA_VERSION}-openjdk-amd64
+ENV PATH=${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin:${ANDROID_SDK_ROOT}/platform-tools:${ANDROID_SDK_ROOT}/emulator:$PATH
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 
-# Accept licenses
 RUN mkdir -p ${ANDROID_SDK_ROOT}/licenses \
-  && echo "8933bad161af4178b5d56f8a50cf6e57" > ${ANDROID_SDK_ROOT}/licenses/android-sdk-license
+  && echo "8933bad161af4178b5d56f8a50cf6e57" > ${ANDROID_SDK_ROOT}/licenses/android-sdk-license \
+  && yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --install "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
-# Install SDK packages
-RUN yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --install "platform-tools" "platforms;android-35" "platforms;android-34" "platforms;android-24" "build-tools;35.0.0" "build-tools;34.0.0" "build-tools;24.0.0" "ndk;26.1.10909125" "emulator"
+# Create /github/workspace so GitHub Actions mounted repo path exists
+RUN mkdir -p /github/workspace
 
-# Create non-root user
+# Add non-root user and set ownership of Android SDK
 ARG USERNAME=expo-rn-runner
-RUN useradd -m -s /bin/bash $USERNAME
+RUN useradd -m -s /bin/bash $USERNAME && \
+  chown -R $USERNAME:$USERNAME ${ANDROID_SDK_ROOT}
 
-# Change ownership to the non-root user
-RUN chown -R expo-rn-runner:expo-rn-runner ${ANDROID_SDK_ROOT}
+# Create root user
+USER root
 
-# Remove caches
-RUN rm -rf /var/cache/apt/*
+# Set working directory inside container to /github/workspace to align with GitHub Actions mount
+WORKDIR /github/workspace
 
-# Prepare cache directory with write permission
-RUN mkdir -p /opt/hostedtoolcache/node && chmod -R 777 /opt/hostedtoolcache
-
-# Install basic utilities
-RUN apt-get update && apt-get install -y bash
-
-# Create non-root user
-USER $USERNAME
-WORKDIR /home/$USERNAME
-
-# Update PATH and env for user
 ENV PATH=${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin:${ANDROID_SDK_ROOT}/platform-tools:${ANDROID_SDK_ROOT}/emulator:/home/${USERNAME}/.yarn/bin:${PATH}
 
-ENTRYPOINT ["tail", "-f", "/dev/null"]
+# No ENTRYPOINT: let orchestrator/ci manage the process

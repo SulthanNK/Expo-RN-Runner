@@ -2,6 +2,10 @@
 
 FROM ubuntu:22.04
 
+LABEL org.opencontainers.image.source=https://github.com/SulthanNK/Expo-RN-Runner
+LABEL org.opencontainers.image.description="A compact Docker image and helper scripts for test your React Native / Expo CI/CD pipelines for Android apps in locally."
+LABEL org.opencontainers.image.licenses=MIT
+
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install dependencies

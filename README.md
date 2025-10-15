@@ -1,99 +1,115 @@
-# Expo RN Runner - Android Docker Image
+# Expo RN Runner 
 
-This repository contains a lightweight Docker image useful for building and testing React Native / Expo Android apps in CI environments. The image installs the Android command-line tools, selected SDK/platforms/emulator bits, Node.js LTS, Yarn, and OpenJDK 17. It is intended to be used as a build runner image in CI pipelines or locally when you need a reproducible Android build environment.
+![Docker](https://img.shields.io/badge/Built_with_docker-blue?style=flat&logo=docker&link=https%3A%2F%2Fwww.docker.com)
+![Docker Image Size (tag)](https://img.shields.io/docker/image-size/sulthannk/expo-rn-runner/0.0.1?style=flat&logo=docker&label=Image%20Size)
+![Ubuntu](https://img.shields.io/badge/Ubuntu-22.04-orange?style=flat&logo=ubuntu&link=https%3A%2F%2Freleases.ubuntu.com%2Fjammy)
+[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-## Contents
+A compact Docker image and helper scripts for test your React Native / Expo CI/CD pipelines for Android apps in locally.
 
-- docker/android-runner/Dockerfile - Dockerfile that builds the Android runner image.
-- docker/android-runner/build-and-push.sh - Small helper script to build the image locally.
+## Why this repo exists
 
-## Image features
+- Reproducible Android build environment for CI pipelines.
+- Fast local testing when you don't want to install the full Android toolchain.
 
-- Ubuntu 22.04 base
-- OpenJDK 17
-- Node.js LTS (configured via build ARG)
-- Yarn (latest installed globally)
-- Android SDK command-line tools and platform tools
-- Android platforms: android-31, android-33 and build-tools 33.0.2
-- Non-root user `expo-rn-builder` for safer CI runs
+## How to use this image
 
-## Quick start - build locally
+This image is published to both Docker Hub and GitHub Container Registry (GHCR). Replace the tag with the version you want (example uses `0.0.1`).
 
-From the repository root run the build script:
+### From Docker Hub (public)
 
 ```bash
-# From repo root (Windows Git Bash / WSL)
-cd docker/android-runner
-./build-and-push.sh
+# Pull from Docker Hub
+docker pull sulthannk/expo-rn-runner:0.0.1
+
+# Run a shell (mount current dir into /workspace)
+docker run --rm -it -v "$(pwd):/workspace" -w /workspace sulthannk/expo-rn-runner:0.0.1 bash
 ```
 
-The script builds the Docker image defined by `docker/android-runner/Dockerfile` and tags it as `sulthannk/expo-rn-ci-runner:latest`.
+### From GitHub Container Registry (GHCR)
 
-If you want to build with docker directly, from the `docker/android-runner` directory run:
+Public GHCR (if image is public):
 
 ```bash
-docker build -t yourorg/expo-rn-ci-runner:latest -f Dockerfile .
+# Pull from GHCR
+docker pull ghcr.io/SulthanNK/expo-rn-runner:0.0.1
+
+# Run a shell
+docker run --rm -it -v "$(pwd):/workspace" -w /workspace ghcr.io/SulthanNK/expo-rn-runner:0.0.1 bash
 ```
 
-You can customize build-time arguments:
-
-- ANDROID_CMDLINE_TOOLS_ZIP - specific command-line tools archive (defaults in Dockerfile)
-- NODE_VERSION - Node major version setup script (default 22.x)
-- JAVA_VERSION - Java version installed (default 17)
-
-Example with args:
+Private GHCR (requires authentication)
 
 ```bash
-docker build \
-  --build-arg NODE_VERSION=22.x \
-  --build-arg JAVA_VERSION=17 \
-  -t yourorg/expo-rn-ci-runner:20-java17 .
+# Authenticate using a GitHub Personal Access Token (PAT) with `read:packages` scope
+echo "$GHCR_TOKEN" | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
+
+# Then pull
+docker pull ghcr.io/SulthanNK/expo-rn-runner:0.0.1
 ```
 
-## Usage examples
+> CI note: In GitHub Actions prefer `docker/login-action` with `GITHUB_TOKEN` to authenticate and pull private GHCR images automatically.
 
-Run the image interactively (the image's ENTRYPOINT keeps the container running):
+## Image contents
+
+| Components            | Name                       | Version                                                        | How to check                                                                                              |
+| --------------------- | -------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| base os               | Ubuntu                     | 22.04                                                          | `docker run --rm IMAGE lsb_release -a` or check `FROM` in `docker/Dockerfile`                             |
+| java                  | OpenJDK                    | 17 (openjdk-17-jdk)                                            | `docker run --rm IMAGE java -version`                                                                     |
+| node                  | Node.js                    | 22.x (NodeSource setup_22.x)                                   | `docker run --rm IMAGE node -v`                                                                           |
+| yarn                  | Yarn (npm)                 | `yarn@latest` (installed globally)                             | `docker run --rm IMAGE yarn -v`                                                                           |
+| eas-cli               | EAS CLI                    | `eas-cli@latest` (installed globally)                          | `docker run --rm IMAGE eas --version`                                                                     |
+| android cmdline tools | Android command-line tools | archive: `commandlinetools-linux-8512546_latest.zip` (8512546) | list files in `/opt/android-sdk/cmdline-tools/latest` or run `docker run --rm IMAGE sdkmanager --version` |
+| android sdk root      | ANDROID_SDK_ROOT           | `/opt/android-sdk`                                             | `docker run --rm IMAGE bash -lc 'echo $ANDROID_SDK_ROOT'`                                                 |
+| platform-tools        | Android platform-tools     | installed (sdkmanager at build time)                           | `docker run --rm IMAGE adb --version` or `sdkmanager --list`                                              |
+| android platform      | Android platform           | android-35                                                     | `docker run --rm IMAGE sdkmanager --list`                                                                 |
+| build-tools           | Android build-tools        | 35.0.0                                                         | check `${ANDROID_SDK_ROOT}/build-tools/35.0.0` or `sdkmanager --list`                                     |
+| apt packages          | system utilities           | curl, wget, unzip, git, jq, build-essential, etc.              | `docker run --rm IMAGE dpkg -l curl` (replace package name as needed)                                     |
+| non-root user         | user                       | `expo-rn-runner`                                               | `docker run --rm IMAGE id expo-rn-runner`                                                                 |
+| image tag (script)    | Docker image tag           | `sulthannk/expo-rn-runner:0.0.1` (build script)                | check `docker/build-image.sh` or your published registry tag                                              |
+
+#### Notes:
+
+- Some components use `latest` or external setup scripts (Node 22.x, yarn@latest, eas-cli@latest), so exact sub-versions are determined at build time.
+- The Android command-line tools version is inferred from the archive name `commandlinetools-linux-8512546_latest.zip` (=> 8512546).
+
+## Want to build the image locally?
+
+1. Clone this repo:
 
 ```bash
-docker run --rm -it yourorg/expo-rn-ci-runner:latest bash
+git clone https://github.com/SulthanNK/Expo-RN-Runner.git
 ```
-
-Mount your project and run Android builds inside the container:
 
 ```bash
-docker run --rm -it \
-  -v "$(pwd):/home/expo-rn-builder/project" \
-  -w /home/expo-rn-builder/project \
-  yourorg/expo-rn-ci-runner:latest bash -lc "yarn install && yarn android:build"
+cd docker
 ```
 
-Adjust commands to match your project's build scripts (Gradle/Expo/Metro/npm/yarn scripts).
+2. To Build the image (Git Bash / WSL on Windows):
 
-## CI integration tips
+```bash
+./build-image.sh
+```
 
-- Use the image as a build step in your CI. Mount the workspace and run Gradle or npm/yarn scripts as needed.
-- Ensure the container has access to any Android keystores or environment secrets through your CI's secret management; avoid baking secrets into images.
+3. Run a container & open a shell:
 
-## Environment and customization
+```bash
+docker run --rm -it -v "$(pwd):/workspace" -w /workspace your/image:tag bash
+```
 
-- The Dockerfile exposes ARGS for Node and Java versions. Use `--build-arg` during `docker build` to adjust.
-- SDK_ROOT is set to `/opt/android-sdk`. If you need to install additional SDK packages, you can extend the Dockerfile or run `sdkmanager` inside a derived image.
+## Use cases why I made this
 
-## Troubleshooting
+- CI runner image: mount your repo in CI and run Gradle / yarn scripts.
+- Local: use to reproduce CI builds or to run Gradle tasks without installing SDKs locally.
 
-- If sdkmanager fails to download packages, ensure the container has outbound network access and the `ANDROID_CMDLINE_TOOLS_ZIP` URL is valid.
-- If Android license acceptance errors appear, confirm the `licenses` content in the Dockerfile matches required license hashes for the SDKs you need.
-- To speed up builds in CI, consider pre-building and pushing the image to your registry and use that cached image in pipelines.
+## Want to customize based on your needs?
 
-## Security notes
-
-- The image adds a non-root user `expo-rn-builder`; prefer running build steps as that user.
-- Do not store secret values (keystore passwords, API keys) inside images. Pass them at runtime or via your CI.
-
-## Contributing
-
-Contributions welcome. If you need support for additional Android platforms/build-tools, send a PR that updates the SDK packages in `docker/android-runner/Dockerfile`.
+- To change Node/Java versions or SDK packages, edit the `Dockerfile` or pass build args to `docker build`.
 
 ## License
 
-This repository has no license specified. Add a LICENSE file to make usage terms explicit.
+- This repository is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
+Enjoy — simple, fast, and repeatable Android app builds for React Native / Expo. 🧪🚀
+
+> Built with ❤️ by SulthanNK

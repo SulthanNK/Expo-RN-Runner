@@ -108,8 +108,8 @@ docker run --rm -it -v "$(pwd):/workspace" -w /workspace your/image:tag bash
 
 ## License
 
-- This repository is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+- Copyright © 2025 [Sulthan Mohaideen](https://github.com/SulthanNK). It is released under the [Apache License](https://www.apache.org/licenses/LICENSE-2.0). See the [LICENSE](LICENSE) file for details.
 
 Enjoy — simple, fast, and repeatable Android app builds for React Native / Expo. 🧪🚀
 
-> Built with ❤️ by SulthanNK
+> Built with ❤️ by [SulthanNK](https://github.com/SulthanNK)

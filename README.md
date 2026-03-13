@@ -106,9 +106,13 @@ docker run --rm -it -v "$(pwd):/workspace" -w /workspace your/image:tag bash
 
 - To change Node/Java versions or SDK packages, edit the `Dockerfile` or pass build args to `docker build`.
 
+# 📖 Blog
+
+How to test React Native GitHub Actions locally - https://sulthannk.hashnode.dev/test-react-native-github-actions-locally
+
 ## License
 
-- Copyright © 2025 [Sulthan Mohaideen](https://github.com/SulthanNK). It is released under the [Apache License](https://www.apache.org/licenses/LICENSE-2.0). See the [LICENSE](LICENSE) file for details.
+- Copyright © 2026 [Sulthan Mohaideen](https://github.com/SulthanNK). It is released under the [Apache License](https://www.apache.org/licenses/LICENSE-2.0). See the [LICENSE](LICENSE) file for details.
 
 Enjoy — simple, fast, and repeatable Android app builds for React Native / Expo. 🧪🚀
 
